@@ -42,6 +42,18 @@ IF (RADIUS)
 	ADD_SUBDIRECTORY(radius)
 ENDIF (RADIUS)
 
+INCLUDE (CheckCSourceCompiles)
+CHECK_C_SOURCE_COMPILES("
+#include <utmp.h>
+int main(void)
+	logwtmp(\"\", \"\", \"\");
+	return 0;
+}" HAVE_LOGWTMP)
+
+IF (HAVE_LOGWTMP)
+	ADD_DEFINITIONS(-DHAVE_LOGWTMP)
+ENDIF (HAVE_LOGWTMP)
+
 ADD_SUBDIRECTORY(triton)
 
 IF (VLANMON)
