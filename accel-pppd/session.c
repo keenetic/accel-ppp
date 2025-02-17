@@ -27,7 +27,7 @@
 #include "memdebug.h"
 
 #ifndef __GLIBC__
-#include <bits/reg.h> /* __WORDSIZE */
+#include <sys/reg.h> /* __WORDSIZE */
 #endif
 
 #define SID_SOURCE_SEQ 0
