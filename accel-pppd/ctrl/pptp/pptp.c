@@ -24,6 +24,8 @@
 #include "utils.h"
 #include "cli.h"
 
+#include "../../ppp/ndm_feedback.h"
+
 #include "connlimit.h"
 
 #include "memdebug.h"
@@ -66,6 +68,7 @@ static const char *conf_ipv6_pool;
 static const char *conf_dpv6_pool;
 static const char *conf_ifname;
 static int conf_proxyarp = 0;
+static uint16_t conf_bfd_port = 0;
 
 static mempool_t conn_pool;
 
@@ -512,10 +515,18 @@ static int pptp_read(struct triton_md_handler_t *h)
 		if (conn->in_size >= sizeof(*hdr)) {
 			if (hdr->magic != htonl(PPTP_MAGIC)) {
 				log_ppp_error("pptp: invalid magic\n");
+
+				if (conf_bfd_port != 0)
+					ndm_send_feedback(conn->ctrl.calling_station_id, conf_bfd_port);
+
 				goto drop;
 			}
 			if (ntohs(hdr->length) >= PPTP_CTRL_SIZE_MAX) {
 				log_ppp_error("pptp: message is too long\n");
+
+				if (conf_bfd_port != 0)
+					ndm_send_feedback(conn->ctrl.calling_station_id, conf_bfd_port);
+
 				goto drop;
 			}
 			if (ntohs(hdr->length) > conn->in_size)
@@ -523,6 +534,10 @@ static int pptp_read(struct triton_md_handler_t *h)
 			if (ntohs(hdr->length) <= conn->in_size) {
 				if (ntohs(hdr->length) != PPTP_CTRL_SIZE(ntohs(hdr->ctrl_type))) {
 					log_ppp_error("pptp: invalid message length\n");
+
+					if (conf_bfd_port != 0)
+						ndm_send_feedback(conn->ctrl.calling_station_id, conf_bfd_port);
+
 					goto drop;
 				}
 				if (process_packet(conn))
@@ -812,6 +827,12 @@ static void load_config(void)
 	opt = conf_get_opt("pptp", "proxy-arp") ? : conf_get_opt("ppp", "proxy-arp");
 	if (opt && atoi(opt) >= 0)
 		conf_proxyarp = atoi(opt) > 0;
+
+	opt = conf_get_opt("pptp", "conf_bfd_port");
+	if (opt)
+		conf_bfd_port = atoi(opt);
+	else
+		conf_bfd_port = 0;
 
 #if 0
 	switch (iprange_check_activation()) {
