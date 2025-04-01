@@ -871,7 +871,7 @@ static char *http_getvalue(char *line, const char *name, int len)
 static int http_send_response(struct sstp_conn_t *conn, char *proto, char *status, char *headers)
 {
 	char datetime[sizeof("aaa, dd bbb yyyy HH:MM:SS GMT")];
-	char padbuf[96];
+	char padbuf[512];
 	const size_t padbuflen = 2 + rand() % (sizeof(padbuf) - 2);
 	char linebuf[1024], *line;
 	struct buffer_t *buf, tmp;
@@ -2616,8 +2616,8 @@ static void sstp_msg_echo(struct triton_timer_t *t)
 	struct ppp_idle idle;
 	const unsigned int hello_interval =
 		conn->hello_interval -
-		(conn->hello_interval >> 3) +
-		rand() % ((conn->hello_interval < 8) ? 1 : (conn->hello_interval >> 3));
+		(conn->hello_interval >> 2) +
+		rand() % ((conn->hello_interval < 8) ? 1 : (conn->hello_interval >> 2));
 
 	switch (conn->sstp_state) {
 	case STATE_SERVER_CALL_CONNECTED:
