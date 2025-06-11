@@ -988,27 +988,27 @@ static int http_recv_request(struct sstp_conn_t *conn, uint8_t *data, int len)
 
 		xff = http_getvalue(line, "X-Forwarded-For", sizeof("X-Forwarded-For") - 1);
 		if (xff) {
-			xff = strsep(&xff, ":");
-
 			if (conf_verbose)
 				log_ppp_info2("recv [HTTP X-Forwarded-For <%s>]\n", xff);
 
-			if (inet_pton(AF_INET, xff, &peer.u.sin.sin_addr) <= 0 && conf_verbose)
+			if (inet_pton(AF_INET, xff, &peer.u.sin.sin_addr) <= 0)
 			{
+				peer.len = sizeof(addr.u.sin6);
+				peer.u.sin6.sin6_family = AF_INET6;
+
+				if (inet_pton(AF_INET6, xff, &peer.u.sin6.sin6_addr) <= 0 && conf_verbose)
 				log_ppp_error("recv [HTTP X-Forwarded-For invalid format]\n");
 			}
 		}
 
 		xff = http_getvalue(line, "X-Forwarded-From", sizeof("X-Forwarded-From") - 1);
 		if (xff) {
-			xff = strsep(&xff, ":");
-
 			if (conf_verbose)
 				log_ppp_info2("recv [HTTP X-Forwarded-From <%s>]\n", xff);
 
 			if (inet_pton(AF_INET, xff, &addr.u.sin.sin_addr) <= 0)
 			{
-				if( !strcmp(xff, "unix") )
+				if( !strncmp(xff, "unix", sizeof("unix") - 1) )
 				{
 					from_uds = 1;
 
@@ -1022,8 +1022,6 @@ static int http_recv_request(struct sstp_conn_t *conn, uint8_t *data, int len)
 
 		xff = http_getvalue(line, "X-Forwarded-For-Port", sizeof("X-Forwarded-For-Port") - 1);
 		if (xff) {
-			xff = strsep(&xff, ":");
-
 			if (conf_verbose)
 				log_ppp_info2("recv [HTTP X-Forwarded-For-Port <%s>]\n", xff);
 
@@ -1033,8 +1031,6 @@ static int http_recv_request(struct sstp_conn_t *conn, uint8_t *data, int len)
 		if (!from_uds) {
 			xff = http_getvalue(line, "X-Forwarded-From-Port", sizeof("X-Forwarded-From-Port") - 1);
 			if (xff) {
-				xff = strsep(&xff, ":");
-
 				if (conf_verbose)
 					log_ppp_info2("recv [HTTP X-Forwarded-From-Port <%s>]\n", xff);
 
@@ -1069,13 +1065,30 @@ static int http_recv_request(struct sstp_conn_t *conn, uint8_t *data, int len)
 	free(hh);
 	free(snih);
 
-	if ((addr.u.sin.sin_addr.s_addr != 0 || from_uds) &&
-		 peer.u.sin.sin_addr.s_addr != 0) {
+	if (peer.u.sin.sin_family == AF_INET) {
+		if ((addr.u.sin.sin_addr.s_addr != 0 || from_uds) &&
+			 peer.u.sin.sin_addr.s_addr != 0) {
+			memcpy(&conn->addr, &peer, sizeof(peer));
+
+			if (from_uds) {
+				addr.u.sin.sin_family = AF_INET;
+				addr.u.sin.sin_addr.s_addr = htonl(0x7f000001);
+			}
+
+			if (reset_peers_addrs(conn, &addr) != 0)
+				return -1;
+		}
+	} else
+	if (peer.u.sin6.sin6_family == AF_INET6) {
 		memcpy(&conn->addr, &peer, sizeof(peer));
 
 		if (from_uds) {
-			addr.u.sin.sin_family = AF_INET;
-			addr.u.sin.sin_addr.s_addr = htonl(0x7f000001);
+			addr.u.sin6.sin6_family = AF_INET6;
+			memset(
+				&addr.u.sin6.sin6_addr.s6_addr,
+				0,
+				sizeof(addr.u.sin6.sin6_addr.s6_addr));
+			addr.u.sin6.sin6_addr.s6_addr[15] = 0x01;
 		}
 
 		if (reset_peers_addrs(conn, &addr) != 0)
