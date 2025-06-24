@@ -44,12 +44,13 @@
 #define NGX_NDM_FROM_NODE_SIZE		31
 
 static void
-ndm_send_feedback(const char* addr, const uint16_t port)
+ndm_send_feedback(const char* ident, const char* addr, const uint16_t port)
 {
 	char buffer[NGX_NDM_MESSAGE_BUFFER];
 	char * p = buffer;
 	char addrbuffer[256];
 	size_t addrlen = 0;
+	const size_t identlen = strlen(ident);
 	size_t len = 0;
 	size_t pos = 0;
 
@@ -80,6 +81,12 @@ ndm_send_feedback(const char* addr, const uint16_t port)
 
 	NGX_NDM_BINXML_PUT_STRING(p, "from", 4);
 	NGX_NDM_BINXML_PUT_STRING(p, NGX_NDM_FROM_NODE, NGX_NDM_FROM_NODE_SIZE);
+
+	// SIBLING + ELEMENT
+	NGX_NDM_BINXML_PUT_COMMAND(p, NGX_NDM_BINXML_CMD_SIBLING, NGX_NDM_BINXML_TYPE_ELEMENT);
+
+	NGX_NDM_BINXML_PUT_STRING(p, "ident", 5);
+	NGX_NDM_BINXML_PUT_STRING(p, ident, identlen);
 
 	// SIBLING + ELEMENT
 	NGX_NDM_BINXML_PUT_COMMAND(p, NGX_NDM_BINXML_CMD_SIBLING, NGX_NDM_BINXML_TYPE_ELEMENT);

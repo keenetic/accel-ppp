@@ -331,7 +331,7 @@ void __export ppp_auth_failed(struct ppp_t *ppp, char *username, int second_deni
 		log_ppp_error("authentication failed\n");
 
 	if (conf_bfd_port != 0 && !second_denied)
-		ndm_send_feedback(ppp->ses.ctrl->calling_station_id, conf_bfd_port);
+		ndm_send_feedback("A1", ppp->ses.ctrl->calling_station_id, conf_bfd_port);
 
 	ap_session_terminate(&ppp->ses, TERM_AUTH_ERROR, 0);
 }

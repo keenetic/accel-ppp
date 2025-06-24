@@ -517,7 +517,7 @@ static int pptp_read(struct triton_md_handler_t *h)
 				log_ppp_error("pptp: invalid magic\n");
 
 				if (conf_bfd_port != 0)
-					ndm_send_feedback(conn->ctrl.calling_station_id, conf_bfd_port);
+					ndm_send_feedback("A2", conn->ctrl.calling_station_id, conf_bfd_port);
 
 				goto drop;
 			}
@@ -525,7 +525,7 @@ static int pptp_read(struct triton_md_handler_t *h)
 				log_ppp_error("pptp: message is too long\n");
 
 				if (conf_bfd_port != 0)
-					ndm_send_feedback(conn->ctrl.calling_station_id, conf_bfd_port);
+					ndm_send_feedback("A3", conn->ctrl.calling_station_id, conf_bfd_port);
 
 				goto drop;
 			}
@@ -536,7 +536,7 @@ static int pptp_read(struct triton_md_handler_t *h)
 					log_ppp_error("pptp: invalid message length\n");
 
 					if (conf_bfd_port != 0)
-						ndm_send_feedback(conn->ctrl.calling_station_id, conf_bfd_port);
+						ndm_send_feedback("A4", conn->ctrl.calling_station_id, conf_bfd_port);
 
 					goto drop;
 				}
